@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { OCCASIONS, OccasionLook } from "@/data/occasions";
-import { buildWhatsAppEnquiryUrl } from "@/data/collections";
+import { OCCASIONS, OccasionLook } from "@/data/karigarData";
+import { buildWhatsAppEnquiryUrl } from "@/data/karigarData";
 import { MandalaDivider, MandalaWatermark } from "@/components/svg/MandalaArt";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 

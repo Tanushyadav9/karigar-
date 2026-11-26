@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { SAMPLE_CLIENT_STORIES } from "@/data/lookbook";
+import { SAMPLE_CLIENT_STORIES } from "@/data/karigarData";
 import { MandalaDivider } from "@/components/svg/MandalaArt";
 
 /**

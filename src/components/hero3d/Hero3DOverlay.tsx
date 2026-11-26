@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { AnimatePresence, motion } from 'framer-motion';
-import type { LookItem } from '@/data/looks';
+import { motion } from 'framer-motion';
+import type { LookItem } from '@/data/karigarData';
 
 interface Hero3DOverlayProps {
   looks: LookItem[];
@@ -29,60 +29,62 @@ export const Hero3DOverlay: React.FC<Hero3DOverlayProps> = ({
   const progressPercent =
     totalVisible > 1 ? (liveProgress / (totalVisible - 1)) * 100 : 100;
 
-  // Duplicate pieces to create an infinite looping rail feeling
-  const railPieces = [...currentLook.pieces, ...currentLook.pieces];
-  // Derive lockstep horizontal shift directly from continuous progress
-  const railShiftPx = -((liveProgress * 180) % (currentLook.pieces.length * 196));
+  // Infinite looping hang-tag rail synchronized in lockstep with `liveProgress`
+  const railPieces = [...currentLook.pieces, ...currentLook.pieces, ...currentLook.pieces];
+  const cardStride = 224;
+  const loopWidth = currentLook.pieces.length * cardStride;
+  const railShiftPx = -(((liveProgress * cardStride) % loopWidth + loopWidth) % loopWidth);
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-between px-6 pb-5 pt-24 sm:px-10 lg:px-14 lg:pt-28">
-      {/* Upper Area: Left Editorial HUD */}
-      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
-        <div className="pointer-events-auto max-w-md">
-          <p className="font-sans text-[10px] uppercase tracking-[0.28em] text-gold-light">
+    <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end lg:justify-between">
+      {/* Upper Editorial HUD:
+          - Desktop (lg+): pinned cleanly to left column (max-w-[390px]), leaving right 65% open for 3D Queue
+          - Mobile/Tablet (<lg): sits cleanly in lower half over a dark gradient scrim so it NEVER covers the 3D model or clips under navbar */}
+      <div className="flex flex-col justify-between gap-2 bg-gradient-to-t from-charcoal via-charcoal/95 to-transparent px-5 pb-2.5 pt-4 sm:gap-3 sm:px-8 sm:pb-3 sm:pt-6 lg:flex-row lg:items-start lg:bg-none lg:px-14 lg:pb-0 lg:pt-28">
+        <div className="pointer-events-auto max-w-[390px]">
+          <p className="font-sans text-[9.5px] uppercase tracking-[0.24em] text-gold-light sm:text-[10px]">
             The Queue of Karigars · Delhi Atelier
           </p>
 
-          <h1 className="mt-3 font-display text-3xl font-light leading-[1.02] tracking-tight text-ivory sm:text-5xl lg:text-[3.35rem]">
+          <h1 className="mt-1 font-display text-[1.45rem] font-light leading-[1.02] tracking-tight text-ivory sm:mt-1.5 sm:text-4xl lg:mt-3 lg:text-[3.25rem]">
             Where every thread is a{' '}
             <span className="italic text-gold-light">signature.</span>
           </h1>
 
-          {/* Active Look Mask-Reveal Name & Hindi Name */}
-          <div className="mt-6 overflow-hidden border-l border-gold/45 pl-4">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentLook.id}
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: '0%', opacity: 1 }}
-                exit={{ y: '-65%', opacity: 0 }}
-                transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <div className="font-display text-2xl text-ivory sm:text-3xl">
-                  {currentLook.name}
-                </div>
-                <div className="mt-0.5 font-hindi text-base text-gold">
-                  {currentLook.hindiName}
-                </div>
-                <p className="mt-1.5 font-sans text-[11px] uppercase tracking-[0.2em] text-ivory/65">
-                  {currentLook.fabricLine}
-                </p>
-              </motion.div>
-            </AnimatePresence>
+          {/* Active Look Mask-Reveal Name & Hindi Name (no mode="wait" so rapid drag never blanks) */}
+          <div className="mt-3.5 overflow-hidden border-l border-gold/50 pl-3.5 lg:mt-5 lg:pl-4">
+            <motion.div
+              key={currentLook.id}
+              initial={{ y: 18, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="font-display text-xl text-ivory sm:text-2xl lg:text-3xl">
+                {currentLook.name}
+              </div>
+              <div className="mt-0.5 font-hindi text-sm text-gold lg:text-base">
+                {currentLook.hindiName}
+              </div>
+              <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.18em] text-ivory/65">
+                {currentLook.fabricLine}
+              </p>
+            </motion.div>
           </div>
 
           {/* Counter "03 / 08" + Stitched Progress Line */}
-          <div className="mt-5 flex items-center gap-4">
-            <span className="font-sans text-xs font-medium tracking-[0.26em] text-ivory tabular-nums">
+          <div className="mt-3.5 flex items-center gap-3.5 lg:mt-5">
+            <span className="font-sans text-xs font-medium tracking-[0.24em] text-ivory tabular-nums">
               {counterLabel}
             </span>
-            <div className="relative h-[2px] w-40 overflow-hidden bg-ivory/15">
+            <div className="relative h-[2px] w-32 overflow-hidden bg-ivory/15 sm:w-40">
               <div
                 className="absolute inset-y-0 left-0 border-t-2 border-dashed border-gold transition-[width] duration-75"
-                style={{ width: `${Math.max(8, Math.min(100, progressPercent))}%` }}
+                style={{
+                  width: `${Math.max(8, Math.min(100, progressPercent))}%`,
+                }}
               />
             </div>
-            <div className="hidden items-center gap-1.5 sm:flex">
+            <div className="flex items-center gap-1.5">
               {looks.slice(0, totalVisible).map((l, idx) => (
                 <button
                   key={l.id}
@@ -90,7 +92,9 @@ export const Hero3DOverlay: React.FC<Hero3DOverlayProps> = ({
                   onClick={() => onSelectLook(idx)}
                   aria-label={`View ${l.name}`}
                   className={`h-1.5 transition-all duration-300 ${
-                    idx === activeIndex ? 'w-4 bg-gold' : 'w-1.5 bg-ivory/30 hover:bg-gold/70'
+                    idx === activeIndex
+                      ? 'w-4 bg-gold'
+                      : 'w-1.5 bg-ivory/30 hover:bg-gold/70'
                   }`}
                 />
               ))}
@@ -98,47 +102,53 @@ export const Hero3DOverlay: React.FC<Hero3DOverlayProps> = ({
           </div>
 
           {/* CTAs */}
-          <div className="mt-6 flex flex-wrap items-center gap-3.5">
+          <div className="mt-4 flex flex-wrap items-center gap-3 lg:mt-6">
             <a
               href="#collections"
-              className="bg-gold px-6 py-3 font-sans text-[10px] font-semibold uppercase tracking-[0.24em] text-charcoal transition-all duration-300 hover:bg-gold-light"
+              className="bg-gold px-5 py-2.5 font-sans text-[10px] font-semibold uppercase tracking-[0.22em] text-charcoal transition-all duration-300 hover:bg-gold-light lg:px-6 lg:py-3"
             >
               Explore Collections
             </a>
             <a
               href="#visit-us"
-              className="border border-gold/55 bg-charcoal/50 px-6 py-3 font-sans text-[10px] font-medium uppercase tracking-[0.24em] text-ivory backdrop-blur-sm transition-all duration-300 hover:border-gold hover:text-gold"
+              className="border border-gold/55 bg-charcoal/60 px-5 py-2.5 font-sans text-[10px] font-medium uppercase tracking-[0.22em] text-ivory backdrop-blur-sm transition-all duration-300 hover:border-gold hover:text-gold lg:px-6 lg:py-3"
             >
               Book a Fitting
             </a>
           </div>
         </div>
 
-        {/* Right Hint */}
+        {/* Right Hint (Desktop Only) */}
         <div className="hidden text-right lg:block">
-          <p className="font-sans text-[10px] uppercase tracking-[0.26em] text-ivory/50">
+          <p className="font-sans text-[10px] uppercase tracking-[0.26em] text-ivory/55">
             Drag · Scroll · Arrow Keys
           </p>
-          <p className="mt-1 font-sans text-[11px] text-gold/75">
+          <p className="mt-1 font-sans text-[11px] text-gold/80">
             Click any Karigar behind to bring forward
           </p>
         </div>
       </div>
 
-      {/* Bottom: Infinite Looping Hang-Tag Rail Synchronized to `progress` */}
-      <div className="pointer-events-auto relative mt-auto overflow-hidden border-t border-gold/20 bg-charcoal/75 pt-3.5 backdrop-blur-md">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="font-sans text-[10px] uppercase tracking-[0.24em] text-gold">
+      {/* Bottom: Infinite Looping Tailor's Hang-Tag Rail Synchronized to `progress` */}
+      <div className="pointer-events-auto relative border-t border-gold/25 bg-charcoal/88 px-5 pb-4 pt-3 backdrop-blur-md sm:px-8 lg:px-14">
+        <div className="mb-2 flex items-center justify-between gap-4">
+          <span className="truncate font-sans text-[10px] uppercase tracking-[0.22em] text-gold">
             Pieces in {currentLook.name}
           </span>
-          <span className="font-sans text-[10px] uppercase tracking-[0.2em] text-ivory/45">
-            Click + Enquire via WhatsApp
+          <span className="hidden shrink-0 font-sans text-[10px] uppercase tracking-[0.18em] text-ivory/50 sm:inline">
+            Tailor&apos;s Hang-Tags · + Enquire via WhatsApp
           </span>
         </div>
 
-        <div className="relative w-full overflow-hidden pb-1">
+        {/* Horizontal golden cord that the tailor tags hang from */}
+        <div className="relative w-full overflow-hidden pt-2.5">
           <div
-            className="flex gap-3 will-change-transform"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-[5px] h-[1px] bg-gradient-to-r from-transparent via-gold/55 to-transparent"
+          />
+
+          <div
+            className="flex gap-4 will-change-transform"
             style={{ transform: `translate3d(${railShiftPx}px, 0, 0)` }}
           >
             {railPieces.map((piece, idx) => {
@@ -151,29 +161,56 @@ export const Hero3DOverlay: React.FC<Hero3DOverlayProps> = ({
                 <div
                   key={`${currentLook.id}-${piece.name}-${idx}`}
                   data-cursor="view"
-                  className="group relative flex w-[184px] shrink-0 items-center gap-3 border border-gold/25 bg-charcoal-soft/90 p-2 transition-colors duration-300 hover:border-gold"
+                  className="group relative mt-1 flex w-[208px] shrink-0 items-center gap-3 border border-gold/35 bg-[#161311]/95 px-2.5 pb-2.5 pt-3.5 shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-all duration-300 hover:-translate-y-0.5 hover:border-gold"
+                  style={{
+                    clipPath:
+                      'polygon(10px 0%, calc(100% - 10px) 0%, 100% 10px, 100% 100%, 0% 100%, 0% 10px)',
+                  }}
                 >
-                  {/* Hang-tag hole & thread */}
-                  <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border border-gold/60 bg-charcoal" />
+                  {/* Gold thread loop tying the hang-tag to the rail cord */}
+                  <svg
+                    width="24"
+                    height="14"
+                    viewBox="0 0 24 14"
+                    fill="none"
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -top-[9px] left-1/2 -translate-x-1/2"
+                  >
+                    <path
+                      d="M12 1 C8 1, 7 8, 12 11 C17 8, 16 1, 12 1 Z"
+                      stroke="#C9A24D"
+                      strokeWidth="1.2"
+                      fill="none"
+                    />
+                  </svg>
 
-                  <div className="relative h-14 w-12 shrink-0 overflow-hidden bg-charcoal">
+                  {/* Brass/Gold Eyelet Hole */}
+                  <span className="absolute left-1/2 top-1.5 h-2 w-2 -translate-x-1/2 rounded-full border border-gold bg-charcoal shadow-[0_0_6px_rgba(201,162,77,0.5)]" />
+
+                  {/* Inner dashed tailor stitch border */}
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-1 border border-dashed border-gold/20"
+                  />
+
+                  <div className="relative z-10 h-12 w-11 shrink-0 overflow-hidden border border-gold/20 bg-charcoal">
                     <Image
                       src={piece.image}
                       alt={piece.name}
                       fill
-                      sizes="48px"
+                      sizes="44px"
                       className="object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   </div>
-                  <div className="min-w-0 flex-1 pr-2">
-                    <p className="truncate font-display text-sm text-ivory">
+                  <div className="relative z-10 min-w-0 flex-1">
+                    <p className="line-clamp-1 font-display text-[13.5px] leading-tight text-ivory">
                       {piece.name}
                     </p>
                     <a
                       href={waHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 inline-block font-sans text-[9.5px] uppercase tracking-[0.2em] text-gold transition-colors hover:text-gold-light"
+                      className="mt-1 inline-flex items-center gap-1 border-b border-gold/40 pb-0.5 font-sans text-[9.5px] uppercase tracking-[0.18em] text-gold transition-colors hover:border-gold hover:text-gold-light"
                     >
                       + Enquire
                     </a>

@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
-import { ATELIER_CONTACT } from "@/data/lookbook";
+import { ATELIER_CONTACT } from "@/data/karigarData";
 
 export function FloatingActions() {
   const { isPreloaderDone } = useSmoothScroll();

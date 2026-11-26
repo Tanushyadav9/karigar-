@@ -8,7 +8,7 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-import { LOOKBOOK_ITEMS } from "@/data/lookbook";
+import { LOOKBOOK_ITEMS } from "@/data/karigarData";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 
 export function LookbookSection() {

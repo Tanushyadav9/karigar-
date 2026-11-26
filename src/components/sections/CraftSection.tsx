@@ -9,7 +9,7 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-import { CRAFT_STATS, CRAFT_STEPS, CraftStat, CraftStep } from "@/data/craft";
+import { CRAFT_STATS, CRAFT_STEPS, CraftStat, CraftStep } from "@/data/karigarData";
 import { ButtonMark } from "@/components/svg/ButtonMark";
 import { MandalaWatermark } from "@/components/svg/MandalaArt";
 

@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ATELIER_CONTACT, INSTAGRAM_TILES } from "@/data/lookbook";
+import { ATELIER_CONTACT, INSTAGRAM_TILES } from "@/data/karigarData";
 
 export function InstagramStrip() {
   return (

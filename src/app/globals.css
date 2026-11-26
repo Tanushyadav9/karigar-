@@ -13,7 +13,7 @@
   --color-saffron: #d98324;
 
   --ease-atelier: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-silk: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-silk: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -26,6 +26,8 @@ html {
   background-color: #121212;
   color: #f6efe2;
   scroll-behavior: auto;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 body {
@@ -33,8 +35,20 @@ body {
   color: #f6efe2;
   font-family: var(--font-jost), system-ui, sans-serif;
   overflow-x: clip;
+  max-width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* AA-compliant keyboard focus indicator across dark & ivory surfaces */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #dec078;
+  outline-offset: 3px;
 }
 
 ::selection {

@@ -13,7 +13,7 @@ import {
   FabricId,
   GarmentId,
   STEP_LABELS,
-} from "@/data/configurator";
+} from "@/data/karigarData";
 import { GarmentLivePreview } from "@/components/sections/GarmentLivePreview";
 import { ButtonMark } from "@/components/svg/ButtonMark";
 import { MandalaWatermark } from "@/components/svg/MandalaArt";

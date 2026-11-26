@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { ATELIER_CONTACT } from "@/data/lookbook";
+import { ATELIER_CONTACT } from "@/data/karigarData";
 import { MandalaWatermark } from "@/components/svg/MandalaArt";
 
 const GARMENT_INTERESTS = [
@@ -241,8 +241,8 @@ export function VisitAtelierSection() {
             </div>
 
             {/* Styled Embedded Google Map */}
-            <div className="relative z-0 isolate space-y-2">
-              <div className="relative z-0 h-52 w-full overflow-hidden border border-gold/35 bg-charcoal">
+            <div className="relative z-0 isolate space-y-2" style={{ transform: "translateZ(0)" }}>
+              <div className="relative z-0 h-52 w-full overflow-hidden border border-gold/35 bg-charcoal [contain:paint]">
                 <iframe
                   title="Karigar Couture Atelier Map — Krishna Nagar, Delhi"
                   src="https://maps.google.com/maps?q=F-6/9,+Mandir+Marg,+Krishna+Nagar,+Delhi+110051&t=&z=16&ie=UTF8&iwloc=&output=embed"

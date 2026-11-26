@@ -9,7 +9,7 @@ import {
   COLLECTIONS,
   CollectionGarment,
   buildWhatsAppEnquiryUrl,
-} from "@/data/collections";
+} from "@/data/karigarData";
 import { MandalaWatermark } from "@/components/svg/MandalaArt";
 
 gsap.registerPlugin(ScrollTrigger);

@@ -2,10 +2,10 @@
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import { EffectComposer, DepthOfField, Noise } from '@react-three/postprocessing';
-import type { LookItem } from '@/data/looks';
+import type { LookItem } from '@/data/karigarData';
 import { LookPlane } from './LookPlane';
 
 interface QueueSceneContentProps {
@@ -14,6 +14,8 @@ interface QueueSceneContentProps {
   pointerRef: React.MutableRefObject<{ x: number; y: number }>;
   lowPower: boolean;
   isMobile: boolean;
+  activeIndex: number;
+  settled: boolean;
   onSelectLook: (index: number) => void;
 }
 
@@ -102,11 +104,15 @@ function GoldDustParticles({ count = 140 }: { count?: number }) {
   const pointsRef = useRef<THREE.Points>(null);
 
   const positions = useMemo(() => {
+    const pseudo = (seed: number) => {
+      const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    };
     const arr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * 14;
-      arr[i * 3 + 1] = Math.random() * 5.5 + 0.1;
-      arr[i * 3 + 2] = -Math.random() * 16 + 2.5;
+      arr[i * 3] = (pseudo(i * 3 + 1) - 0.5) * 14;
+      arr[i * 3 + 1] = pseudo(i * 3 + 2) * 5.5 + 0.1;
+      arr[i * 3 + 2] = -pseudo(i * 3 + 3) * 16 + 2.5;
     }
     return arr;
   }, [count]);
@@ -146,9 +152,10 @@ const QueueSceneContent: React.FC<QueueSceneContentProps> = ({
   pointerRef,
   lowPower,
   isMobile,
+  activeIndex,
+  settled,
   onSelectLook,
 }) => {
-  const { camera } = useThree();
   const brandTex = useBrandBackdropTexture();
   const mandalaTex = useMandalaTexture();
   const mandalaRef = useRef<THREE.Mesh>(null);
@@ -160,23 +167,27 @@ const QueueSceneContent: React.FC<QueueSceneContentProps> = ({
     [looks, isMobile]
   );
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     // Gentle mouse / gyro camera parallax drift
-    const targetCamX = 0.35 + pointerRef.current.x * 0.24;
-    const targetCamY = 1.08 + pointerRef.current.y * 0.12;
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
-    camera.lookAt(0.28, 1.32, -3.2);
+    const baseCamX = isMobile ? 0.0 : 0.12;
+    const baseCamY = isMobile ? 1.55 : 1.08;
+    const baseCamZ = isMobile ? 6.1 : 5.35;
+    const targetCamX = baseCamX + pointerRef.current.x * 0.22;
+    const targetCamY = baseCamY + pointerRef.current.y * 0.11;
+    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetCamX, 0.05);
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY, 0.05);
+    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, baseCamZ, 0.05);
+    state.camera.lookAt(isMobile ? 0.0 : 0.18, isMobile ? 1.55 : 1.32, -3.2);
 
     // Slow parallax on background 3D brand text & mandala rotation
     if (backdropRef.current) {
-      backdropRef.current.position.x = 0.45 - pointerRef.current.x * 0.32;
+      backdropRef.current.position.x = (isMobile ? 0.0 : 0.6) - pointerRef.current.x * 0.35;
     }
     if (mandalaRef.current) {
       mandalaRef.current.rotation.z += delta * 0.028;
     }
     if (spotRef.current) {
-      spotRef.current.position.x = 0.6 + pointerRef.current.x * 0.4;
+      spotRef.current.position.x = (isMobile ? 0.15 : 0.85) + pointerRef.current.x * 0.35;
     }
   });
 
@@ -249,6 +260,8 @@ const QueueSceneContent: React.FC<QueueSceneContentProps> = ({
           index={index}
           progressRef={progressRef}
           lowPower={lowPower}
+          isMobile={isMobile}
+          isActiveSettled={settled && activeIndex === index}
           onSelect={onSelectLook}
         />
       ))}
@@ -275,6 +288,8 @@ interface QueueCanvasProps {
   isInView: boolean;
   lowPower: boolean;
   isMobile: boolean;
+  activeIndex: number;
+  settled: boolean;
   onSelectLook: (index: number) => void;
 }
 
@@ -285,6 +300,8 @@ export const QueueCanvas: React.FC<QueueCanvasProps> = ({
   isInView,
   lowPower,
   isMobile,
+  activeIndex,
+  settled,
   onSelectLook,
 }) => {
   const dpr: [number, number] = isMobile ? [1, 1.5] : [1, 2];
@@ -320,6 +337,8 @@ export const QueueCanvas: React.FC<QueueCanvasProps> = ({
         pointerRef={pointerRef}
         lowPower={lowPower}
         isMobile={isMobile}
+        activeIndex={activeIndex}
+        settled={settled}
         onSelectLook={onSelectLook}
       />
     </Canvas>

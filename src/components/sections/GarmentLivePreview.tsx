@@ -7,7 +7,7 @@ import {
   DetailingOption,
   FabricOption,
   GarmentOption,
-} from "@/data/configurator";
+} from "@/data/karigarData";
 import { MandalaWatermark } from "@/components/svg/MandalaArt";
 
 interface GarmentLivePreviewProps {

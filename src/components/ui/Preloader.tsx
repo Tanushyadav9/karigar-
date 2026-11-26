@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { MandalaWatermark } from "@/components/svg/MandalaArt";
-import { looks } from "@/data/looks";
+import { looks } from "@/data/karigarData";
 import * as THREE from "three";
 
 export function Preloader() {
@@ -20,23 +20,50 @@ export function Preloader() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    // Lazy-preload 3D look textures while the 4-hole button preloader runs
-    const loader = new THREE.TextureLoader();
-    looks.forEach((look) => {
-      loader.load(look.image);
-    });
-
-    const timer = window.setTimeout(
-      () => {
+    if (prefersReducedMotion) {
+      const id = window.setTimeout(() => {
         setVisible(false);
-        if (prefersReducedMotion) {
-          setPreloaderDone(true);
-        }
-      },
-      prefersReducedMotion ? 0 : 2350
+        setPreloaderDone(true);
+      }, 0);
+      return () => window.clearTimeout(id);
+    }
+
+    let cancelled = false;
+    const loader = new THREE.TextureLoader();
+
+    const loadAllTextures = Promise.allSettled(
+      looks.map(
+        (look) =>
+          new Promise<void>((resolve) => {
+            loader.load(
+              look.image,
+              () => resolve(),
+              undefined,
+              () => {
+                console.warn(`[Karigar Preloader] Failed to preload ${look.image}`);
+                resolve();
+              }
+            );
+          })
+      )
     );
 
-    return () => window.clearTimeout(timer);
+    const minDelay = new Promise<void>((resolve) =>
+      window.setTimeout(resolve, 1850)
+    );
+    const maxTimeout = new Promise<void>((resolve) =>
+      window.setTimeout(resolve, 4200)
+    );
+
+    Promise.race([Promise.all([loadAllTextures, minDelay]), maxTimeout]).then(
+      () => {
+        if (!cancelled) setVisible(false);
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
   }, [setPreloaderDone]);
 
   return (

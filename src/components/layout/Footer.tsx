@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ATELIER_CONTACT } from "@/data/lookbook";
+import { ATELIER_CONTACT } from "@/data/karigarData";
 import { ButtonMark } from "@/components/svg/ButtonMark";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 
