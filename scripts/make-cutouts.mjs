@@ -14,8 +14,8 @@ const LOOK_SOURCES = [
   { out: 'look-03.png', src: 'public/images/collection-indowestern.webp', name: 'Sangeet Indo-Western' },
   { out: 'look-04.png', src: 'public/images/occasion-sangeet.webp', name: 'Cocktail Velvet Jacket' },
   { out: 'look-05.png', src: 'public/images/collection-safari.webp', name: 'Safari Suit' },
-  { out: 'look-06.png', src: 'public/images/collection-trousers.webp', name: 'Tailored Trouser & Shirt' },
-  { out: 'look-07.png', src: 'public/images/collection-indowestern.webp', name: 'Boardroom Nehru Jacket' },
+  { out: 'look-06.png', src: 'public/images/collection-kurta.webp', name: 'Festive Kurta Set' },
+  { out: 'look-07.png', src: 'public/images/collection-nehru.webp', name: 'Boardroom Nehru Jacket' },
   { out: 'look-08.png', src: 'public/images/collection-shirts.webp', name: 'Classic Shirt & Trousers' },
 ];
 
@@ -58,9 +58,10 @@ for fname in sorted(os.listdir(raw_dir)):
     top = max(20, BASELINE_BOTTOM - rh)
     canvas.paste(resized, (left, top), resized)
 
-    out_path = os.path.join(out_dir, fname)
-    canvas.save(out_path, 'PNG', optimize=True)
-    print(f'Post-processed {fname}: {rw}x{rh} baseline={top + rh}')
+    out_path = os.path.join(out_dir, os.path.splitext(fname)[0] + '.webp')
+    canvas = canvas.resize((640, 1133), Image.Resampling.LANCZOS)
+    canvas.save(out_path, 'WEBP', quality=84, method=6)
+    print(f'Post-processed {os.path.basename(out_path)}: {rw}x{rh} baseline={top + rh}')
 `;
 
 async function run() {

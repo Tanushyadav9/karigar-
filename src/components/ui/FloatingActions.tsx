@@ -11,7 +11,7 @@ export function FloatingActions() {
 
   useEffect(() => {
     const onScroll = () => {
-      setPastHero(window.scrollY > 420);
+      setPastHero(window.scrollY > window.innerHeight * 0.88);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });

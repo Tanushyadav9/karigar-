@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import { EffectComposer, DepthOfField, Noise } from '@react-three/postprocessing';
 import type { LookItem } from '@/data/karigarData';
@@ -50,15 +50,15 @@ function useBrandBackdropTexture() {
 
       await document.fonts.ready;
       await Promise.allSettled([
-        document.fonts.load(`400 340px ${hindiFont}`, 'कारीगर'),
-        document.fonts.load(`300 76px ${cormorantFont}`, 'COUTURE'),
+        document.fonts.load(`400 170px ${hindiFont}`, 'कारीगर'),
+        document.fonts.load(`300 38px ${cormorantFont}`, 'COUTURE'),
       ]);
 
       if (cancelled) return;
 
       const canvas = document.createElement('canvas');
-      canvas.width = 2048;
-      canvas.height = 1024;
+      canvas.width = 1024;
+      canvas.height = 512;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
@@ -68,12 +68,12 @@ function useBrandBackdropTexture() {
 
       // Huge "कारीगर" in Antique Gold using resolved next/font Devanagari family
       ctx.fillStyle = 'rgba(201, 162, 77, 0.28)';
-      ctx.font = `400 340px ${hindiFont}`;
+      ctx.font = `400 170px ${hindiFont}`;
       ctx.fillText('कारीगर', canvas.width / 2, canvas.height * 0.42);
 
       // "COUTURE" in spaced Cormorant caps below
       ctx.fillStyle = 'rgba(246, 239, 226, 0.24)';
-      ctx.font = `300 76px ${cormorantFont}`;
+      ctx.font = `300 38px ${cormorantFont}`;
       const spaced = 'C   O   U   T   U   R   E';
       ctx.fillText(spaced, canvas.width / 2, canvas.height * 0.72);
 
@@ -102,19 +102,19 @@ function useMandalaTexture() {
   return useMemo(() => {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 1024;
+    canvas.width = 512;
+    canvas.height = 512;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    const cx = 512;
-    const cy = 512;
+    const cx = 256;
+    const cy = 256;
     ctx.strokeStyle = 'rgba(201, 162, 77, 0.14)';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
 
-    [460, 390, 300, 210, 120].forEach((r, idx) => {
+    [230, 195, 150, 105, 60].forEach((r, idx) => {
       ctx.beginPath();
-      if (idx % 2 === 0) ctx.setLineDash([6, 10]);
+      if (idx % 2 === 0) ctx.setLineDash([4, 6]);
       else ctx.setLineDash([]);
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.stroke();
@@ -127,9 +127,9 @@ function useMandalaTexture() {
       ctx.translate(cx, cy);
       ctx.rotate(a);
       ctx.beginPath();
-      ctx.moveTo(0, -120);
-      ctx.quadraticCurveTo(28, -260, 0, -455);
-      ctx.quadraticCurveTo(-28, -260, 0, -120);
+      ctx.moveTo(0, -60);
+      ctx.quadraticCurveTo(14, -130, 0, -228);
+      ctx.quadraticCurveTo(-14, -130, 0, -60);
       ctx.stroke();
       ctx.restore();
     }
@@ -197,11 +197,16 @@ const QueueSceneContent: React.FC<QueueSceneContentProps> = ({
   settled,
   onSelectLook,
 }) => {
+  const { invalidate } = useThree();
   const brandTex = useBrandBackdropTexture();
   const mandalaTex = useMandalaTexture();
   const mandalaRef = useRef<THREE.Mesh>(null);
   const backdropRef = useRef<THREE.Mesh>(null);
   const spotRef = useRef<THREE.SpotLight>(null);
+
+  useEffect(() => {
+    invalidate();
+  }, [activeIndex, settled, invalidate]);
 
   const visibleLooks = useMemo(
     () => (isMobile ? looks.slice(0, 5) : looks),
@@ -212,13 +217,13 @@ const QueueSceneContent: React.FC<QueueSceneContentProps> = ({
     // Gentle mouse / gyro camera parallax drift
     const baseCamX = isMobile ? 0.0 : 0.12;
     const baseCamY = isMobile ? 1.55 : 1.08;
-    const baseCamZ = isMobile ? 6.1 : 5.35;
+    const baseCamZ = isMobile ? 5.35 : 5.35;
     const targetCamX = baseCamX + pointerRef.current.x * 0.22;
     const targetCamY = baseCamY + pointerRef.current.y * 0.11;
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, targetCamX, 0.05);
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY, 0.05);
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, baseCamZ, 0.05);
-    state.camera.lookAt(isMobile ? 0.0 : 0.18, isMobile ? 1.55 : 1.32, -3.2);
+    state.camera.lookAt(isMobile ? 0.0 : 0.18, isMobile ? 2.05 : 1.32, -3.2);
 
     // Slow parallax on background 3D brand text & mandala rotation
     if (backdropRef.current) {
@@ -361,13 +366,13 @@ export const QueueCanvas: React.FC<QueueCanvasProps> = ({
 
   return (
     <Canvas
-      shadows={!lowPower}
+      shadows={!lowPower && !isMobile}
       dpr={dpr}
-      frameloop={isInView ? 'always' : 'never'}
+      frameloop={!isInView ? 'never' : isMobile || lowPower ? 'demand' : 'always'}
       camera={{ fov: 35, near: 0.1, far: 45, position: [0.35, 1.08, 5.35] }}
       gl={{
-        antialias: !lowPower,
-        powerPreference: 'high-performance',
+        antialias: !lowPower && !isMobile,
+        powerPreference: isMobile ? 'default' : 'high-performance',
         alpha: true,
       }}
       className="h-full w-full"

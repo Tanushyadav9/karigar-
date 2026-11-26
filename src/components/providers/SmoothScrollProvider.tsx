@@ -9,12 +9,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import Lenis from "lenis";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import type LenisType from "lenis";
 import { MotionConfig } from "framer-motion";
-
-gsap.registerPlugin(ScrollTrigger);
 
 interface SmoothScrollContextValue {
   isPreloaderDone: boolean;
@@ -39,7 +35,8 @@ export function SmoothScrollProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const lenisRef = useRef<Lenis | null>(null);
+  const lenisRef = useRef<LenisType | null>(null);
+  const scrollTriggerRef = useRef<{ refresh: () => void } | null>(null);
   const [isPreloaderDone, setIsPreloaderDone] = useState(false);
 
   const applyScrollLock = useCallback((locked: boolean) => {
@@ -60,43 +57,63 @@ export function SmoothScrollProvider({
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    const lenis = new Lenis({
-      duration: prefersReducedMotion ? 0.01 : 1.35,
-      easing: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)),
-      smoothWheel: !prefersReducedMotion,
-      touchMultiplier: 1.5,
-    });
+    let cancelled = false;
+    let lenis: LenisType | null = null;
+    let cleanupTicker: (() => void) | null = null;
+    let onScrollFn: (() => void) | null = null;
 
-    lenisRef.current = lenis;
+    const initLenis = async () => {
+      if (cancelled || lenis) return;
+      const [{ default: Lenis }, { default: gsap }, { ScrollTrigger }] =
+        await Promise.all([
+          import("lenis"),
+          import("gsap"),
+          import("gsap/ScrollTrigger"),
+        ]);
+      if (cancelled) return;
+      gsap.registerPlugin(ScrollTrigger);
+      scrollTriggerRef.current = ScrollTrigger;
 
-    if (!isPreloaderDone) {
-      document.documentElement.style.overflow = "hidden";
-      document.body.style.overflow = "hidden";
-      lenis.stop();
-    }
+      const onScroll = () => ScrollTrigger.update();
+      const raf = (time: number) => lenis?.raf(time * 1000);
+      onScrollFn = onScroll;
 
-    const onScroll = () => {
-      ScrollTrigger.update();
+      lenis = new Lenis({
+        duration: prefersReducedMotion ? 0.01 : 1.35,
+        easing: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+        smoothWheel: !prefersReducedMotion,
+        touchMultiplier: 1.5,
+      });
+      lenisRef.current = lenis;
+      lenis.on("scroll", onScroll);
+      gsap.ticker.add(raf);
+      gsap.ticker.lagSmoothing(0);
+      cleanupTicker = () => gsap.ticker.remove(raf);
     };
-    lenis.on("scroll", onScroll);
 
-    const raf = (time: number) => {
-      lenis.raf(time * 1000);
+    const events = ["wheel", "touchstart", "scroll"] as const;
+    const onFirstScroll = () => {
+      void initLenis();
     };
-
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
+    events.forEach((ev) =>
+      window.addEventListener(ev, onFirstScroll, { passive: true, once: true })
+    );
+    const initId = window.setTimeout(() => void initLenis(), 4500);
 
     return () => {
-      gsap.ticker.remove(raf);
-      lenis.off("scroll", onScroll);
-      lenis.destroy();
+      cancelled = true;
+      window.clearTimeout(initId);
+      events.forEach((ev) => window.removeEventListener(ev, onFirstScroll));
+      cleanupTicker?.();
+      if (lenis) {
+        if (onScrollFn) lenis.off("scroll", onScrollFn);
+        lenis.destroy();
+      }
       lenisRef.current = null;
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
     };
     // Initialize Lenis once on mount; preloader & drawer lock effects manage stop/start
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -105,7 +122,7 @@ export function SmoothScrollProvider({
     if (isPreloaderDone) {
       applyScrollLock(false);
       const timer = window.setTimeout(() => {
-        ScrollTrigger.refresh();
+        scrollTriggerRef.current?.refresh();
       }, 150);
       return () => window.clearTimeout(timer);
     } else {

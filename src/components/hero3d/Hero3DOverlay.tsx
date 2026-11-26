@@ -39,44 +39,44 @@ export const Hero3DOverlay: React.FC<Hero3DOverlayProps> = ({
     <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end lg:justify-between">
       {/* Upper Editorial HUD:
           - Desktop (lg+): pinned cleanly to left column (max-w-[390px]), leaving right 65% open for 3D Queue
-          - Mobile/Tablet (<lg): sits cleanly in lower half over a dark gradient scrim so it NEVER covers the 3D model or clips under navbar */}
-      <div className="flex flex-col justify-between gap-2 bg-gradient-to-t from-charcoal via-charcoal/95 to-transparent px-5 pb-2.5 pt-4 sm:gap-3 sm:px-8 sm:pb-3 sm:pt-6 lg:flex-row lg:items-start lg:bg-none lg:px-14 lg:pb-0 lg:pt-28">
+          - Mobile/Tablet (<lg): compact bottom editorial strip so the model owns the upper stage */}
+      <div className="flex flex-col justify-between gap-1.5 bg-gradient-to-t from-charcoal via-charcoal/88 to-transparent px-4 pb-2 pt-8 sm:gap-3 sm:px-8 sm:pb-3 sm:pt-8 lg:flex-row lg:items-start lg:bg-none lg:px-14 lg:pb-0 lg:pt-28">
         <div className="pointer-events-auto max-w-[390px]">
-          <p className="font-sans text-[9.5px] uppercase tracking-[0.24em] text-gold-light sm:text-[10px]">
+          <p className="font-sans text-[8.5px] uppercase tracking-[0.22em] text-gold-light sm:text-[10px]">
             The Queue of Karigars · Delhi Atelier
           </p>
 
-          <h1 className="mt-1 font-display text-[1.45rem] font-light leading-[1.02] tracking-tight text-ivory sm:mt-1.5 sm:text-4xl lg:mt-3 lg:text-[3.25rem]">
+          <h1 className="mt-0.5 font-display text-[1.3rem] font-light leading-[1.06] tracking-tight text-ivory sm:mt-1.5 sm:text-4xl lg:mt-3 lg:text-[3.25rem]">
             Where every thread is a{' '}
             <span className="italic text-gold-light">signature.</span>
           </h1>
 
           {/* Active Look Mask-Reveal Name & Hindi Name (no mode="wait" so rapid drag never blanks) */}
-          <div className="mt-3.5 overflow-hidden border-l border-gold/50 pl-3.5 lg:mt-5 lg:pl-4">
+          <div className="mt-2 overflow-hidden border-l border-gold/50 pl-3 lg:mt-5 lg:pl-4">
             <motion.div
               key={currentLook.id}
-              initial={{ y: 18, opacity: 0 }}
+              initial={{ y: 14, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="font-display text-xl text-ivory sm:text-2xl lg:text-3xl">
-                {currentLook.name}
+              <div className="flex flex-wrap items-baseline gap-x-2 font-display text-lg text-ivory sm:text-2xl lg:block lg:text-3xl">
+                <span>{currentLook.name}</span>
+                <span className="font-hindi text-xs text-gold lg:mt-0.5 lg:block lg:text-base">
+                  · {currentLook.hindiName}
+                </span>
               </div>
-              <div className="mt-0.5 font-hindi text-sm text-gold lg:text-base">
-                {currentLook.hindiName}
-              </div>
-              <p className="mt-1 font-sans text-[10px] uppercase tracking-[0.18em] text-ivory/65">
+              <p className="mt-0.5 line-clamp-1 font-sans text-[9px] uppercase tracking-[0.16em] text-ivory/65 sm:text-[10px]">
                 {currentLook.fabricLine}
               </p>
             </motion.div>
           </div>
 
           {/* Counter "03 / 08" + Stitched Progress Line */}
-          <div className="mt-3.5 flex items-center gap-3.5 lg:mt-5">
-            <span className="font-sans text-xs font-medium tracking-[0.24em] text-ivory tabular-nums">
+          <div className="mt-2.5 flex items-center gap-3 lg:mt-5">
+            <span className="font-sans text-[11px] font-medium tracking-[0.22em] text-ivory tabular-nums sm:text-xs">
               {counterLabel}
             </span>
-            <div className="relative h-[2px] w-32 overflow-hidden bg-ivory/15 sm:w-40">
+            <div className="relative h-[2px] w-24 overflow-hidden bg-ivory/15 sm:w-40">
               <div
                 className="absolute inset-y-0 left-0 border-t-2 border-dashed border-gold transition-[width] duration-75"
                 style={{
@@ -101,17 +101,17 @@ export const Hero3DOverlay: React.FC<Hero3DOverlayProps> = ({
             </div>
           </div>
 
-          {/* CTAs */}
-          <div className="mt-4 flex flex-wrap items-center gap-3 lg:mt-6">
+          {/* CTAs — side-by-side on mobile to stay compact and never overlap model */}
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3 lg:mt-6">
             <a
               href="#collections"
-              className="bg-gold px-5 py-2.5 font-sans text-[10px] font-semibold uppercase tracking-[0.22em] text-charcoal transition-all duration-300 hover:bg-gold-light lg:px-6 lg:py-3"
+              className="bg-gold px-3 py-2 text-center font-sans text-[9px] font-semibold uppercase tracking-[0.16em] text-charcoal transition-all duration-300 hover:bg-gold-light sm:px-5 sm:py-2.5 sm:text-[10px] sm:tracking-[0.22em] lg:px-6 lg:py-3"
             >
               Explore Collections
             </a>
             <a
               href="#visit-us"
-              className="border border-gold/55 bg-charcoal/60 px-5 py-2.5 font-sans text-[10px] font-medium uppercase tracking-[0.22em] text-ivory backdrop-blur-sm transition-all duration-300 hover:border-gold hover:text-gold lg:px-6 lg:py-3"
+              className="border border-gold/55 bg-charcoal/70 px-3 py-2 text-center font-sans text-[9px] font-medium uppercase tracking-[0.16em] text-ivory backdrop-blur-sm transition-all duration-300 hover:border-gold hover:text-gold sm:px-5 sm:py-2.5 sm:text-[10px] sm:tracking-[0.22em] lg:px-6 lg:py-3"
             >
               Book a Fitting
             </a>

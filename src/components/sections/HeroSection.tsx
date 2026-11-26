@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { AnimatePresence, motion } from 'framer-motion';
 import { looks } from '@/data/karigarData';
 import { Hero3DOverlay } from '@/components/hero3d/Hero3DOverlay';
 
@@ -33,6 +32,33 @@ export function HeroSection() {
   const [isMobile, setIsMobile] = useState(false);
   const [lowPower, setLowPower] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [mount3D, setMount3D] = useState(false);
+
+  // Mount 3D WebGL Canvas immediately on user interaction or after initial TTI window
+  useEffect(() => {
+    let done = false;
+    const enable = () => {
+      if (!done) {
+        done = true;
+        setMount3D(true);
+      }
+    };
+    const timer = window.setTimeout(enable, 6500);
+
+    window.addEventListener('pointerdown', enable, { once: true, passive: true });
+    window.addEventListener('pointermove', enable, { once: true, passive: true });
+    window.addEventListener('touchstart', enable, { once: true, passive: true });
+    window.addEventListener('wheel', enable, { once: true, passive: true });
+    window.addEventListener('keydown', enable, { once: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointerdown', enable);
+      window.removeEventListener('pointermove', enable);
+      window.removeEventListener('touchstart', enable);
+      window.removeEventListener('wheel', enable);
+      window.removeEventListener('keydown', enable);
+    };
+  }, []);
 
   const totalVisible = isMobile ? 5 : looks.length;
   const maxIndex = totalVisible - 1;
@@ -238,27 +264,19 @@ export function HeroSection() {
         onWheel={handleWheel}
         className="relative z-10 h-full w-full touch-pan-y"
       >
-        {reducedMotion ? (
-          <div className="flex h-full w-full items-center justify-center lg:pl-[28%]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentLook.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.45 }}
-                className="relative h-[55vh] w-[280px]"
-              >
-                <Image
-                  src={currentLook.image}
-                  alt={currentLook.name}
-                  fill
-                  priority
-                  sizes="280px"
-                  className="object-contain"
-                />
-              </motion.div>
-            </AnimatePresence>
+        {reducedMotion || !mount3D ? (
+          <div className="flex h-full w-full items-start justify-center pt-16 lg:items-center lg:pt-0 lg:pl-[28%]">
+            <div className="relative h-[66vh] w-[336px] lg:h-[72vh] lg:w-[360px]">
+              <Image
+                src={currentLook.image}
+                alt={currentLook.name}
+                fill
+                priority
+                fetchPriority="high"
+                sizes="(max-width: 1024px) 336px, 360px"
+                className="object-contain object-top lg:object-center"
+              />
+            </div>
           </div>
         ) : (
           <QueueCanvas

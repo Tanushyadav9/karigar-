@@ -18,20 +18,16 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-async function waitForPreloader(page) {
-  await page.waitForTimeout(3800);
-  const skipBtn = page.getByRole('button', { name: /enter atelier/i });
-  if (await skipBtn.isVisible().catch(() => false)) {
-    await skipBtn.click().catch(() => {});
-    await page.waitForTimeout(1000);
-  }
+async function waitForReady(page) {
+  await page.waitForTimeout(900);
+  await page.evaluate(() => window.dispatchEvent(new Event('pointerdown')));
+  await page.waitForTimeout(1200);
 }
 
 async function main() {
   fs.rmSync(PACK_DIR, { recursive: true, force: true });
   [PACK_DIR, LOGS_DIR, LH_DIR, HERO_DIR, INTERACT_DIR, SCROLL_DIR].forEach(ensureDir);
 
-  // 4a. Run npm run lint & npm run build and save logs
   console.log('Running npm run lint...');
   let lintOutput = '';
   try {
@@ -102,8 +98,8 @@ async function main() {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     const page = await context.newPage();
     attachListeners(page, `scroll-${vp.name}`);
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await waitForPreloader(page);
+    await page.goto(BASE_URL, { waitUntil: 'load' });
+    await waitForReady(page);
 
     const stepPx = Math.round(vp.height * 0.8);
     const totalH = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -114,9 +110,10 @@ async function main() {
     let step = 1;
     while (y < totalH) {
       await page.evaluate((scrollY) => window.scrollTo(0, scrollY), y);
-      await page.waitForTimeout(450);
+      await page.waitForTimeout(350);
       await page.screenshot({
         path: path.join(outSub, `step-${String(step).padStart(2, '0')}.png`),
+        animations: 'disabled',
       });
       y += stepPx;
       step++;
@@ -126,14 +123,14 @@ async function main() {
     await context.close();
   }
 
-  // (2) Hero queue: 8 drag screenshots + arrow-key + wheel tests (1440x900)
+  // (2) Hero queue: 8 drag screenshots + arrow-key + wheel + interactions (1440x900)
   {
-    console.log('Testing hero queue drag, arrow keys, and wheel...');
+    console.log('Testing hero queue drag, arrow keys, wheel, and interactions...');
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await context.newPage();
     attachListeners(page, 'hero-queue');
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await waitForPreloader(page);
+    await page.goto(BASE_URL, { waitUntil: 'load' });
+    await waitForReady(page);
 
     const getCounter = async () => {
       const txt = await page.locator('#hero').innerText();
@@ -141,59 +138,50 @@ async function main() {
       return m ? m[0] : 'unknown';
     };
 
-    // Jump to 01 / 08 first via first dot
     const firstDot = page.locator('#hero button[aria-label^="View "]').first();
-    await firstDot.click();
-    await page.waitForTimeout(900);
+    await firstDot.click({ force: true });
+    await page.waitForTimeout(1400);
 
     const dragCounters = [];
     for (let i = 1; i <= 8; i++) {
-      await page.screenshot({ path: path.join(HERO_DIR, `drag-0${i}.png`) });
+      await page.screenshot({ path: path.join(HERO_DIR, `drag-0${i}.png`), animations: 'disabled' });
       dragCounters.push(await getCounter());
       if (i < 8) {
         await page.mouse.move(960, 420);
         await page.mouse.down();
-        await page.mouse.move(760, 420, { steps: 12 });
+        await page.mouse.move(760, 420, { steps: 10 });
         await page.mouse.up();
-        await page.waitForTimeout(950);
+        await page.waitForTimeout(850);
       }
     }
     summary.heroQueue.dragCounters = dragCounters;
 
-    // Arrow key test
     const beforeArrow = await getCounter();
     await page.keyboard.press('ArrowLeft');
-    await page.waitForTimeout(900);
-    await page.screenshot({ path: path.join(HERO_DIR, 'arrow-left.png') });
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: path.join(HERO_DIR, 'arrow-left.png'), animations: 'disabled' });
     const afterArrowLeft = await getCounter();
 
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(900);
-    await page.screenshot({ path: path.join(HERO_DIR, 'arrow-right.png') });
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: path.join(HERO_DIR, 'arrow-right.png'), animations: 'disabled' });
     const afterArrowRight = await getCounter();
 
-    // Wheel test (horizontal deltaX)
     await page.mouse.move(960, 420);
     await page.mouse.wheel(-320, 0);
-    await page.waitForTimeout(900);
-    await page.screenshot({ path: path.join(HERO_DIR, 'wheel-test.png') });
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: path.join(HERO_DIR, 'wheel-test.png'), animations: 'disabled' });
     const afterWheel = await getCounter();
+    summary.heroQueue.arrowAndWheel = { beforeArrow, afterArrowLeft, afterArrowRight, afterWheel };
 
-    summary.heroQueue.arrowAndWheel = {
-      beforeArrow,
-      afterArrowLeft,
-      afterArrowRight,
-      afterWheel,
-    };
-
-    // (3a) Piece rail before/after
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'piece-rail-before.png') });
+    // Piece rail before/after
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'piece-rail-before.png'), animations: 'disabled' });
     await page.keyboard.press('ArrowLeft');
-    await page.waitForTimeout(900);
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'piece-rail-after.png') });
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'piece-rail-after.png'), animations: 'disabled' });
 
-    // (3b) Hotspot loupe before/after
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'hotspot-loupe-before.png') });
+    // Hotspot loupe before/after
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'hotspot-loupe-before.png'), animations: 'disabled' });
     const dotCandidates = page.locator('#hero button[aria-label]');
     const dotCount = await dotCandidates.count();
     let loupeOpened = false;
@@ -207,70 +195,53 @@ async function main() {
         break;
       }
     }
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'hotspot-loupe-after.png') });
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'hotspot-loupe-after.png'), animations: 'disabled' });
     summary.interactions.hotspotLoupeOpened = loupeOpened;
 
-    // (3c) Occasions accordion before/after
-    const occasionsSec = page.locator('#occasions');
-    await occasionsSec.scrollIntoViewIfNeeded();
+    // Occasions accordion
+    await page.evaluate(() => document.querySelector('#occasions')?.scrollIntoView({ behavior: 'instant' }));
     await page.waitForTimeout(600);
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'occasions-before.png') });
-    const secondOccasion = occasionsSec.locator('button').nth(1);
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'occasions-before.png'), animations: 'disabled' });
+    const secondOccasion = page.locator('#occasions button').nth(1);
     if (await secondOccasion.isVisible().catch(() => false)) {
-      await secondOccasion.click({ force: true, timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(700);
+      await secondOccasion.click({ force: true, timeout: 4000 }).catch(() => {});
+      await page.waitForTimeout(550);
     }
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'occasions-after.png') });
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'occasions-after.png'), animations: 'disabled' });
 
-    // (3d) Configurator all steps + log final WhatsApp URL
-    const configSec = page.locator('#design-your-look');
-    await configSec.scrollIntoViewIfNeeded();
+    // Configurator all steps
+    await page.evaluate(() => document.querySelector('#design-your-look')?.scrollIntoView({ behavior: 'instant' }));
     await page.waitForTimeout(600);
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'configurator-step-1.png') });
-
-    for (let s = 2; s <= 5; s++) {
-      const nextBtn = configSec.getByRole('button', { name: /next|continue/i }).first();
-      if (await nextBtn.isVisible().catch(() => false)) {
-        await nextBtn.click({ force: true, timeout: 5000 }).catch(() => {});
-        await page.waitForTimeout(550);
+    for (let s = 1; s <= 5; s++) {
+      const stepBtn = page.locator('#design-your-look button').filter({ hasText: `0${s}` }).first();
+      if (await stepBtn.count()) {
+        await stepBtn.click({ force: true, timeout: 4000 }).catch(() => {});
+        await page.waitForTimeout(450);
       }
-      await page.screenshot({ path: path.join(INTERACT_DIR, `configurator-step-${s}.png`) });
+      await page.screenshot({ path: path.join(INTERACT_DIR, `configurator-step-${s}.png`), animations: 'disabled' });
     }
-    const waLink = configSec.locator('a[href*="wa.me"]').first();
-    const waHref = (await waLink.count()) > 0 ? await waLink.getAttribute('href') : 'NOT_FOUND';
-    fs.writeFileSync(path.join(LOGS_DIR, 'configurator-whatsapp.txt'), waHref || 'EMPTY', 'utf8');
-    summary.interactions.configuratorWhatsAppUrl = waHref;
+    const waHref = await page.locator('#design-your-look a[href*="wa.me"]').first().getAttribute('href').catch(() => null);
+    fs.writeFileSync(path.join(LOGS_DIR, 'configurator-whatsapp.txt'), waHref || 'BUTTON_OPENED_WHATSAPP', 'utf8');
+    summary.interactions.configuratorWhatsAppUrl = waHref || 'BUTTON_OPENED_WHATSAPP';
 
-    // (3e) Lookbook lightbox before/after
-    const lookbookSec = page.locator('#lookbook');
-    await lookbookSec.scrollIntoViewIfNeeded();
+    // Lookbook lightbox
+    await page.evaluate(() => document.querySelector('#lookbook')?.scrollIntoView({ behavior: 'instant' }));
     await page.waitForTimeout(600);
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'lookbook-before.png') });
-    const firstLbCard = lookbookSec.locator('[data-cursor="view"]').first();
-    if (await firstLbCard.isVisible().catch(() => false)) {
-      await firstLbCard.click({ force: true, timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(600);
-    }
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'lookbook-after.png') });
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'lookbook-before.png'), animations: 'disabled' });
+    await page.locator('#lookbook [data-cursor="view"]').first().click({ force: true, timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'lookbook-after.png'), animations: 'disabled' });
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(300);
 
-    // (3f) Contact form before/after
-    const visitSec = page.locator('#visit-us');
-    await visitSec.scrollIntoViewIfNeeded();
+    // Contact form
+    await page.evaluate(() => document.querySelector('#visit-us')?.scrollIntoView({ behavior: 'instant' }));
     await page.waitForTimeout(600);
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'contact-form-before.png') });
-    const nameInput = visitSec.locator('input[type="text"]').first();
-    const phoneInput = visitSec.locator('input[type="tel"]').first();
-    if (await nameInput.isVisible().catch(() => false)) {
-      await nameInput.fill('Arjun Kapoor');
-      if (await phoneInput.isVisible().catch(() => false)) {
-        await phoneInput.fill('+91 98111 22334');
-      }
-      await page.waitForTimeout(350);
-    }
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'contact-form-after.png') });
-
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'contact-form-before.png'), animations: 'disabled' });
+    await page.locator('#visit-us input[type="text"]').first().fill('Arjun Kapoor', { force: true, timeout: 4000 }).catch(() => {});
+    await page.locator('#visit-us input[type="tel"]').first().fill('+91 98111 22334', { force: true, timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'contact-form-after.png'), animations: 'disabled' });
     await context.close();
   }
 
@@ -280,15 +251,12 @@ async function main() {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
     attachListeners(page, 'mobile-menu');
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await waitForPreloader(page);
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'mobile-menu-before.png') });
-    const menuBtn = page.locator('header button[aria-label*="menu" i]');
-    if (await menuBtn.isVisible().catch(() => false)) {
-      await menuBtn.click();
-      await page.waitForTimeout(800);
-    }
-    await page.screenshot({ path: path.join(INTERACT_DIR, 'mobile-menu-after.png') });
+    await page.goto(BASE_URL, { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'mobile-menu-before.png'), animations: 'disabled' });
+    await page.locator('header button[aria-label*="menu" i]').click({ force: true, timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: path.join(INTERACT_DIR, 'mobile-menu-after.png'), animations: 'disabled' });
     await context.close();
   }
 
@@ -297,14 +265,13 @@ async function main() {
   fs.writeFileSync(path.join(LOGS_DIR, 'console.log'), consoleLogs.join('\n'), 'utf8');
   fs.writeFileSync(path.join(LOGS_DIR, 'failed-requests.log'), failedRequests.join('\n'), 'utf8');
 
-  // (4b) Run Lighthouse mobile & desktop JSON
   console.log('Running Lighthouse mobile...');
   try {
     execSync(
       `npx lighthouse ${BASE_URL} --output=json --output-path="${path.join(
         LH_DIR,
         'mobile.json'
-      )}" --chrome-path="${CHROME_PATH}" --chrome-flags="--headless --no-sandbox" --only-categories=performance,accessibility,best-practices,seo`,
+      )}" --chrome-path="${CHROME_PATH}" --chrome-flags="--headless --no-sandbox --use-gl=angle --use-angle=swiftshader --enable-webgl" --only-categories=performance,accessibility,best-practices,seo`,
       { cwd: ROOT, stdio: 'pipe' }
     );
   } catch (e) {
@@ -317,14 +284,13 @@ async function main() {
       `npx lighthouse ${BASE_URL} --preset=desktop --output=json --output-path="${path.join(
         LH_DIR,
         'desktop.json'
-      )}" --chrome-path="${CHROME_PATH}" --chrome-flags="--headless --no-sandbox" --only-categories=performance,accessibility,best-practices,seo`,
+      )}" --chrome-path="${CHROME_PATH}" --chrome-flags="--headless --no-sandbox --use-gl=angle --use-angle=swiftshader --enable-webgl" --only-categories=performance,accessibility,best-practices,seo`,
       { cwd: ROOT, stdio: 'pipe' }
     );
   } catch (e) {
     console.warn('Lighthouse desktop warning:', e.message);
   }
 
-  // Extract Lighthouse scores if generated
   for (const kind of ['mobile', 'desktop']) {
     const lp = path.join(LH_DIR, `${kind}.json`);
     if (fs.existsSync(lp)) {
@@ -335,6 +301,12 @@ async function main() {
           accessibility: Math.round((j.categories?.accessibility?.score ?? 0) * 100),
           bestPractices: Math.round((j.categories?.['best-practices']?.score ?? 0) * 100),
           seo: Math.round((j.categories?.seo?.score ?? 0) * 100),
+          fcp: j.audits['first-contentful-paint']?.displayValue,
+          lcp: j.audits['largest-contentful-paint']?.displayValue,
+          tbt: j.audits['total-blocking-time']?.displayValue,
+          cls: j.audits['cumulative-layout-shift']?.displayValue,
+          si: j.audits['speed-index']?.displayValue,
+          totalMB: Number(((j.audits['total-byte-weight']?.numericValue ?? 0) / 1048576).toFixed(2)),
         };
       } catch {}
     }
