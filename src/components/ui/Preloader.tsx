@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { MandalaWatermark } from "@/components/svg/MandalaArt";
+import { looks } from "@/data/looks";
+import * as THREE from "three";
 
 export function Preloader() {
   const { setPreloaderDone } = useSmoothScroll();
@@ -17,6 +19,12 @@ export function Preloader() {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
+
+    // Lazy-preload 3D look textures while the 4-hole button preloader runs
+    const loader = new THREE.TextureLoader();
+    looks.forEach((look) => {
+      loader.load(look.image);
+    });
 
     const timer = window.setTimeout(
       () => {

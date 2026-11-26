@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-type CursorMode = "default" | "needle" | "view" | "scissors" | "none";
+type CursorMode = "default" | "needle" | "view" | "scissors" | "drag" | "none";
 
 const subscribeMedia = (callback: () => void) => {
   const pointerMq = window.matchMedia("(pointer: fine)");
@@ -42,6 +42,7 @@ export function CustomCursor() {
       if (!(el instanceof Element)) return "default";
       const explicit = el.closest("[data-cursor]")?.getAttribute("data-cursor");
       if (explicit === "none") return "none";
+      if (explicit === "drag") return "drag";
       if (explicit === "view") return "view";
       if (explicit === "scissors") return "scissors";
       if (explicit === "needle") return "needle";
@@ -158,6 +159,17 @@ export function CustomCursor() {
         <span className="h-1 w-1 rounded-full bg-gold" />
         <span className="font-sans text-[10px] font-medium uppercase tracking-atelier text-ivory">
           View
+        </span>
+      </div>
+
+      {/* "Drag" Ring over 3D Queue */}
+      <div
+        className={`absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-gold bg-charcoal/75 backdrop-blur-sm transition-all duration-300 ease-atelier ${
+          mode === "drag" ? "h-14 w-14 scale-100 opacity-100" : "h-7 w-7 scale-50 opacity-0"
+        }`}
+      >
+        <span className="font-sans text-[9px] font-medium uppercase tracking-[0.22em] text-gold-light">
+          Drag
         </span>
       </div>
 
