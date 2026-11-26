@@ -113,12 +113,16 @@ export function HeroSection() {
         const isNowSettled =
           !dragStateRef.current.active &&
           Math.abs(velocityRef.current) < 0.001 &&
-          Math.abs(progressRef.current - nearest) < 0.035;
+          Math.abs(progressRef.current - nearest) < 0.05;
         setSettled(isNowSettled);
-      } else if (progressRef.current !== targetRef.current) {
-        progressRef.current = targetRef.current;
-        setLiveProgress(targetRef.current);
-        setSettled(true);
+      } else {
+        if (progressRef.current !== targetRef.current) {
+          progressRef.current = targetRef.current;
+          setLiveProgress(targetRef.current);
+        }
+        if (!dragStateRef.current.active) {
+          setSettled(true);
+        }
       }
 
       rafId = requestAnimationFrame(tick);

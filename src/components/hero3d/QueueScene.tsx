@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { MeshReflectorMaterial } from '@react-three/drei';
@@ -21,37 +21,78 @@ interface QueueSceneContentProps {
 
 /**
  * Generates a high-resolution transparent canvas texture for the 3D background
- * "कारीगर" (Tiro Devanagari Hindi) + "COUTURE" (Cormorant Garamond) plane.
+ * "कारीगर" (Tiro Devanagari Hindi) + "COUTURE" (Cormorant Garamond) plane,
+ * waiting for `document.fonts.ready` and explicit `document.fonts.load` using
+ * the CSS variables exposed by `next/font` on `document.documentElement` / `document.body`.
  */
 function useBrandBackdropTexture() {
-  return useMemo(() => {
-    if (typeof document === 'undefined') return null;
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let cancelled = false;
+    let activeTexture: THREE.CanvasTexture | null = null;
 
-    // Huge "कारीगर" in Antique Gold
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(201, 162, 77, 0.22)';
-    ctx.font = '400 340px "Tiro Devanagari Hindi", Georgia, serif';
-    ctx.fillText('कारीगर', canvas.width / 2, canvas.height * 0.43);
+    const resolveComputedFont = (cssVar: string, fallback: string) => {
+      const probe = document.createElement('span');
+      probe.style.fontFamily = `var(${cssVar}), ${fallback}`;
+      probe.style.position = 'absolute';
+      probe.style.visibility = 'hidden';
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).fontFamily || fallback;
+      document.body.removeChild(probe);
+      return computed;
+    };
 
-    // "COUTURE" in spaced Cormorant caps below
-    ctx.fillStyle = 'rgba(246, 239, 226, 0.20)';
-    ctx.font = '300 76px "Cormorant Garamond", Georgia, serif';
-    const spaced = 'C   O   U   T   U   R   E';
-    ctx.fillText(spaced, canvas.width / 2, canvas.height * 0.72);
+    const drawBackdrop = async () => {
+      const hindiFont = resolveComputedFont('--font-hindi', 'serif');
+      const cormorantFont = resolveComputedFont('--font-cormorant', 'Georgia, serif');
 
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.needsUpdate = true;
-    return tex;
+      await document.fonts.ready;
+      await Promise.allSettled([
+        document.fonts.load(`400 340px ${hindiFont}`, 'कारीगर'),
+        document.fonts.load(`300 76px ${cormorantFont}`, 'COUTURE'),
+      ]);
+
+      if (cancelled) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Huge "कारीगर" in Antique Gold using resolved next/font Devanagari family
+      ctx.fillStyle = 'rgba(201, 162, 77, 0.28)';
+      ctx.font = `400 340px ${hindiFont}`;
+      ctx.fillText('कारीगर', canvas.width / 2, canvas.height * 0.42);
+
+      // "COUTURE" in spaced Cormorant caps below
+      ctx.fillStyle = 'rgba(246, 239, 226, 0.24)';
+      ctx.font = `300 76px ${cormorantFont}`;
+      const spaced = 'C   O   U   T   U   R   E';
+      ctx.fillText(spaced, canvas.width / 2, canvas.height * 0.72);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      activeTexture = tex;
+      setTexture(tex);
+    };
+
+    void drawBackdrop();
+
+    return () => {
+      cancelled = true;
+      activeTexture?.dispose();
+    };
   }, []);
+
+  return texture;
 }
 
 /**

@@ -23,12 +23,15 @@
     "three": "^0.187.0"
   },
   "devDependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "lighthouse": "^13.6.0",
+    "playwright": "^1.65.1",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
   }

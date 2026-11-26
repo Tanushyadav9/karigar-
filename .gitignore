@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-pack/
+test-pack.zip
 
 # next.js
 /.next/
